@@ -9,8 +9,8 @@ Elle sert de backend à l'application Cyna et fournit une interface RESTful conf
 - Symfony
 - API Platform
 - Doctrine ORM
-- PostgreSQL (ou autre SGBD)
-- Authentification JWT (si activée)
+- MariaDb
+- Authentification JWT
 
 ## Structure du projet
 
@@ -25,7 +25,7 @@ Elle sert de backend à l'application Cyna et fournit une interface RESTful conf
 
 1. Cloner le dépôt :
    ```bash
-   git clone https://github.com/votre-utilisateur/cyna-api.git
+   git@github.com:CynaProject/Cyna-Api.git
    cd cyna-api
    ```
 
