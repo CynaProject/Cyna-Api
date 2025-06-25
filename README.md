@@ -25,7 +25,7 @@ Elle sert de backend à l'application Cyna et fournit une interface RESTful conf
 
 1. Cloner le dépôt :
    ```bash
-   git@github.com:CynaProject/Cyna-Api.git
+   git clone git@github.com:CynaProject/Cyna-Api.git
    cd cyna-api
    ```
 
