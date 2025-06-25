@@ -5,6 +5,20 @@ namespace App\Entity;
 use App\Repository\SubscriptionRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
+
+#[ApiResource(operations: [
+    new GetCollection(normalizationContext: ['groups' => 'subscription:list']),
+    new Get(normalizationContext: ['groups' => 'subscription:item', 'product:item']),
+])]
+#[ApiFilter(SearchFilter::class, properties: ['user.id' => 'exact'])]
 
 #[ORM\Entity(repositoryClass: SubscriptionRepository::class)]
 class Subscription
@@ -12,27 +26,42 @@ class Subscription
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['subscription:list', 'subscription:item','user:list', 'user:item'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'subscriptions')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['subscription:list', 'subscription:item', 'user:list', 'user:item', 'product:item','product:list'])]
     private ?Product $product = null;
 
     #[ORM\ManyToOne(inversedBy: 'subscriptions')]
+    #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'subscriptions')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['subscription:list', 'subscription:item','order:list', 'order:item','user:list', 'user:item',])]
     private ?Order $order = null;
 
     #[ORM\ManyToOne(inversedBy: 'subscriptions')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['subscription:list', 'subscription:item','user:list', 'user:item'])]
     private ?Package $package = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['subscription:list', 'subscription:item','user:list', 'user:item'])]
     private ?\DateTimeInterface $subscriptionDate = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['subscription:list', 'subscription:item','user:list', 'user:item'])]
     private ?\DateTimeInterface $expirationDate = null;
 
+    #[ORM\Column(length: 50)]
+    #[Groups(['product:list', 'product:item','topproduct:list', 'topproduct:item','subscription:list', 'subscription:item','user:list', 'user:item'])]
+    private ?string $status = null;
+
     #[ORM\Column]
+    #[Groups(['subscription:list', 'subscription:item','user:list', 'user:item'])]
     private ?int $quantity = null;
 
     public function getId(): ?int
@@ -120,6 +149,18 @@ class Subscription
     public function setQuantity(int $quantity): static
     {
         $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): static
+    {
+        $this->status = $status;
 
         return $this;
     }

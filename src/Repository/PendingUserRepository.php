@@ -2,27 +2,19 @@
 
 namespace App\Repository;
 
-use App\Entity\UserPaymentMode;
+use App\Entity\PendingUser;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<UserPaymentMode>
- *
- * @method UserPaymentMode|null find($id, $lockMode = null, $lockVersion = null)
- * @method UserPaymentMode|null findOneBy(array $criteria, array $orderBy = null)
- * @method UserPaymentMode[]    findAll()
- * @method UserPaymentMode[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
- */
-class UserPaymentModeRepository extends ServiceEntityRepository
+class PendingUserRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, UserPaymentMode::class);
+        parent::__construct($registry, PendingUser::class);
     }
 
 //    /**
-//     * @return UserPaymentMode[] Returns an array of UserPaymentMode objects
+//     * @return UserAddress[] Returns an array of UserAddress objects
 //     */
 //    public function findByExampleField($value): array
 //    {
@@ -36,7 +28,7 @@ class UserPaymentModeRepository extends ServiceEntityRepository
 //        ;
 //    }
 
-//    public function findOneBySomeField($value): ?UserPaymentMode
+//    public function findOneBySomeField($value): ?UserAddress
 //    {
 //        return $this->createQueryBuilder('u')
 //            ->andWhere('u.exampleField = :val')

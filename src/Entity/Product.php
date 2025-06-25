@@ -7,6 +7,38 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Post;
+
+use App\Dto\ProductInput;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
+
+use App\DataTransformer\ProductDataInputTransformer;
+
+
+
+#[ApiResource(
+    input: ProductInput::class,
+    output: Product::class,
+    processor: ProductDataInputTransformer::class, 
+    operations: [
+        new GetCollection(normalizationContext: ['groups' => 'product:list']),
+        new Get(normalizationContext: ['groups' => 'product:item']),
+        new Post(
+            normalizationContext: ['groups' => ['package:item']],
+            security: "is_granted('ROLE_ADMIN') or object == user",
+            securityMessage: "Seuls les admins ou le propriétaire peuvent créer/modifier."
+        ),
+    ],
+)]
+
+#[ApiFilter(SearchFilter::class, properties: ['category.id' => 'exact'])]
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -14,37 +46,53 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['product:list', 'product:item','topproduct:list', 'topproduct:item','subscription:list', 'subscription:item','user:list', 'user:item',])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['product:list', 'product:item','topproduct:list', 'topproduct:item','subscription:list', 'subscription:item','user:list', 'user:item'])]
     private ?string $name = null;
-
+    
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['product:list', 'product:item','topproduct:list', 'topproduct:item','subscription:item', 'subscription:list','user:list', 'user:item',])]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['product:list', 'product:item','topproduct:list', 'topproduct:item','subscription:item', 'subscription:list','user:list', 'user:item',])]
     private ?string $details = null;
 
-    #[ORM\ManyToOne(inversedBy: 'products')]
-    private ?Category $category = null;
-
     #[ORM\Column]
+    #[Groups(['product:list', 'product:item','topproduct:list', 'topproduct:item','subscription:item', 'subscription:list','user:list', 'user:item',])]
     private ?bool $available = null;
 
-    #[ORM\OneToMany(targetEntity: TopProducts::class, mappedBy: 'products')]
+    #[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'products')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['product:list', 'product:item','topproduct:list', 'topproduct:item','subscription:item', 'subscription:list','user:list', 'user:item',])]
+    private ?Category $category = null;
+    
+    #[ORM\OneToMany(targetEntity: TopProducts::class, mappedBy: 'product')]
+
     private Collection $topProducts;
 
-    #[ORM\OneToMany(targetEntity: CartDetails::class, mappedBy: 'idProduct')]
+    #[ORM\OneToMany(targetEntity: CartDetails::class, mappedBy: 'product')]
     private Collection $cartDetails;
 
-    #[ORM\OneToMany(targetEntity: ProductPrice::class, mappedBy: 'idProduct')]
-    private Collection $productPrices;
+#[ApiSubresource()]
+#[ORM\OneToMany(targetEntity: ProductPrice::class, mappedBy: 'product', cascade: ['persist', 'remove'])]
+#[Groups(['product:list', 'product:item', 'productprice:list', 'productprice:item', 'topproduct:list', 'topproduct:item'])]
+private Collection $productPrices;
 
     #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'product')]
+    #[Groups(['productprice:item','topproduct:list'])]
     private Collection $subscriptions;
 
-    #[ORM\OneToMany(targetEntity: ProductImage::class, mappedBy: 'product')]
+    #[ApiSubresource()]
+    #[ORM\OneToMany(mappedBy: 'product', targetEntity: ProductImage::class, cascade: ['persist'], orphanRemoval: true)]
+    #[Groups(['product:list', 'product:item','topproduct:list', 'topproduct:item','subscription:item', 'subscription:list'])]
     private Collection $images;
+
+    #[ORM\OneToMany(targetEntity: OrderDetails::class, mappedBy: 'product', orphanRemoval: true)]
+    private Collection $orderDetails;
 
     public function __construct()
     {
@@ -53,8 +101,10 @@ class Product
         $this->productPrices = new ArrayCollection();
         $this->subscriptions = new ArrayCollection();
         $this->images = new ArrayCollection();
+        $this->orderDetails = new ArrayCollection();
     }
 
+    
     public function getId(): ?int
     {
         return $this->id;
@@ -71,7 +121,32 @@ class Product
 
         return $this;
     }
+// Getters and setters for the missing methods:
 
+    public function getAvailable(): ?bool
+    {
+        return $this->available;
+    }
+    
+    public function setAvailable(bool $available): static
+    {
+        $this->available = $available;
+    
+        return $this;
+    }
+    
+    public function getDetails(): ?string
+    {
+        return $this->details;
+    }
+    
+    public function setDetails(string $details): static
+    {
+        $this->details = $details;
+    
+        return $this;
+    }
+    
     public function getDescription(): ?string
     {
         return $this->description;
@@ -80,18 +155,6 @@ class Product
     public function setDescription(string $description): static
     {
         $this->description = $description;
-
-        return $this;
-    }
-
-    public function getStock(): ?int
-    {
-        return $this->stock;
-    }
-
-    public function setStock(int $stock): static
-    {
-        $this->stock = $stock;
 
         return $this;
     }
@@ -107,6 +170,18 @@ class Product
 
         return $this;
     }
+
+
+    public function addImage(ProductImage $image): self
+    {
+        if (!$this->images->contains($image)) {
+            $this->images[] = $image;
+            $image->setProduct($this); 
+        }
+    
+        return $this;
+    }
+
 
     public function getCategory(): ?Category
     {
@@ -200,22 +275,21 @@ class Product
         return $this->productPrices;
     }
 
-    public function addProductPrice(ProductPrice $productPrice): static
+    public function addProductPrice(ProductPrice $productPrice): self
     {
         if (!$this->productPrices->contains($productPrice)) {
             $this->productPrices->add($productPrice);
-            $productPrice->setIdProduct($this);
+            $productPrice->setProduct($this);
         }
-
         return $this;
     }
+    
 
-    public function removeProductPrice(ProductPrice $productPrice): static
+    public function removeProductPrice(ProductPrice $productPrice): self
     {
         if ($this->productPrices->removeElement($productPrice)) {
-            // set the owning side to null (unless already changed)
-            if ($productPrice->getIdProduct() === $this) {
-                $productPrice->setIdProduct(null);
+            if ($productPrice->getProduct() === $this) {
+                $productPrice->setProduct(null);
             }
         }
 
@@ -260,15 +334,7 @@ class Product
         return $this->images;
     }
 
-    public function addImage(ProductImage $image): static
-    {
-        if (!$this->images->contains($image)) {
-            $this->images->add($image);
-            $image->setProduct($this);
-        }
 
-        return $this;
-    }
 
     public function removeImage(ProductImage $image): static
     {
@@ -276,6 +342,36 @@ class Product
             // set the owning side to null (unless already changed)
             if ($image->getProduct() === $this) {
                 $image->setProduct(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, OrderDetails>
+     */
+    public function getOrderDetails(): Collection
+    {
+        return $this->orderDetails;
+    }
+
+    public function addOrderDetail(OrderDetails $orderDetail): static
+    {
+        if (!$this->orderDetails->contains($orderDetail)) {
+            $this->orderDetails->add($orderDetail);
+            $orderDetail->setProduct($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOrderDetail(OrderDetails $orderDetail): static
+    {
+        if ($this->orderDetails->removeElement($orderDetail)) {
+            // set the owning side to null (unless already changed)
+            if ($orderDetail->getProduct() === $this) {
+                $orderDetail->setProduct(null);
             }
         }
 

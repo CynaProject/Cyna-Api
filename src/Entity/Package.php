@@ -6,32 +6,55 @@ use App\Repository\PackageRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Get;
 
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
+
+#[ApiResource(operations: [
+    new GetCollection(normalizationContext: ['groups' => 'package:list']),
+    new Get(normalizationContext: ['groups' => 'package:item']),
+    ],)]
+
+#[ApiResource]
 #[ORM\Entity(repositoryClass: PackageRepository::class)]
 class Package
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['package:list', 'package:item','user:list', 'user:item','product:item','product:list','topproduct:item','topproduct:list'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['package:list', 'package:item','subscription:list','subscription:item','product:item','product:list','topproduct:item','topproduct:list','user:list', 'user:item',])]
     private ?string $name = null;
 
-    #[ORM\OneToMany(targetEntity: CartDetails::class, mappedBy: 'idPackage')]
+    #[ORM\OneToMany(targetEntity: CartDetails::class, mappedBy: 'package')]
+    #[Groups(['package:list', 'package:item'])]
     private Collection $cartDetails;
 
-    #[ORM\OneToMany(targetEntity: ProductPrice::class, mappedBy: 'idPackage')]
+    #[ORM\OneToMany(targetEntity: ProductPrice::class, mappedBy: 'package')]
+    #[Groups(['package:list', 'package:item'])]
     private Collection $productPrices;
 
     #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'package')]
+    #[Groups(['package:list', 'package:item'])]
     private Collection $subscriptions;
+
+    #[ORM\OneToMany(targetEntity: OrderDetails::class, mappedBy: 'package', orphanRemoval: true)]
+    #[Groups(['package:list', 'package:item'])]
+    private Collection $orderDetails;
 
     public function __construct()
     {
         $this->cartDetails = new ArrayCollection();
         $this->productPrices = new ArrayCollection();
         $this->subscriptions = new ArrayCollection();
+        $this->orderDetails = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -135,6 +158,36 @@ class Package
             // set the owning side to null (unless already changed)
             if ($subscription->getPackage() === $this) {
                 $subscription->setPackage(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, OrderDetails>
+     */
+    public function getOrderDetails(): Collection
+    {
+        return $this->orderDetails;
+    }
+
+    public function addOrderDetail(OrderDetails $orderDetail): static
+    {
+        if (!$this->orderDetails->contains($orderDetail)) {
+            $this->orderDetails->add($orderDetail);
+            $orderDetail->setPackage($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOrderDetail(OrderDetails $orderDetail): static
+    {
+        if ($this->orderDetails->removeElement($orderDetail)) {
+            // set the owning side to null (unless already changed)
+            if ($orderDetail->getPackage() === $this) {
+                $orderDetail->setPackage(null);
             }
         }
 

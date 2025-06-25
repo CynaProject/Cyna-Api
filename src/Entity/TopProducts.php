@@ -6,6 +6,20 @@ use App\Repository\TopProductsRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Patch;
+
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
+
+#[ApiResource(operations: [
+    new GetCollection(normalizationContext: ['groups' => 'topproduct:list']),
+    new Get(normalizationContext: ['groups' => 'topproduct:item']),
+    new Patch(security: "is_granted('ROLE_ADMIN') or object == user"),
+    ],)]
 
 #[ORM\Entity(repositoryClass: TopProductsRepository::class)]
 class TopProducts
@@ -13,16 +27,21 @@ class TopProducts
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['topproduct:list', 'topproduct:item'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['topproduct:list', 'topproduct:item'])]
     private ?string $name = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
+    #[Groups(['topproduct:list', 'topproduct:item'])]
     private ?int $position = null;
 
     #[ORM\ManyToOne(inversedBy: 'topProducts')]
-    private ?Product $services = null;
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['topproduct:list', 'topproduct:item', 'product:list', 'product:item'])]
+    private ?Product $product = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     private ?ProductImage $image = null;
@@ -30,7 +49,7 @@ class TopProducts
     public function __construct()
     {
         $this->topProducts = new ArrayCollection();
-        $this->services = new ArrayCollection();
+        $this->product = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -62,14 +81,15 @@ class TopProducts
         return $this;
     }
 
-    public function getServices(): ?Product
+    #[Groups(['topproduct:list', 'topproduct:item'])]
+    public function getProduct(): ?Product
     {
-        return $this->services;
+        return $this->product;
     }
 
-    public function setServices(?Product $services): static
+    public function setProduct(?Product $product): static
     {
-        $this->services = $services;
+        $this->product = $product;
 
         return $this;
     }

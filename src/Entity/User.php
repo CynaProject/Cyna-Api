@@ -9,6 +9,26 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Patch;
+
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
+
+use App\State\UserStateProcessor;
+
+#[ApiResource(operations: [
+    new GetCollection(normalizationContext: ['groups' => 'user:list']),
+    new Get(normalizationContext: ['groups' => 'user:item', 'subscription:list']),
+    new Post(processor: UserStateProcessor::class),
+    new Patch(security: "is_granted('ROLE_ADMIN') or object == user"),
+    ],)]
+#[ApiFilter(SearchFilter::class, properties: ['id' => 'exact', 'email' => 'exact'])]  
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -16,12 +36,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:list', 'user:item'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Groups(['user:list', 'user:item'])]
     private ?string $email = null;
 
     #[ORM\Column]
+    #[Groups(['user:list', 'user:item'])]
     private array $roles = [];
 
     /**
@@ -30,39 +53,49 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
-    #[ORM\Column(length: 100)]
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['user:list', 'user:item'])]
     private ?string $firstname = null;
 
-    #[ORM\Column(length: 100)]
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['user:list', 'user:item'])]
     private ?string $lastname = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['user:list', 'user:item'])]
     private ?\DateTimeInterface $creationDate = null;
 
     #[ORM\Column]
+    #[Groups(['user:list', 'user:item'])]
     private ?bool $isValid = null;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
+    #[MaxDepth(1)]  
+    #[Groups(['user:list', 'user:item'])]
     private ?Cart $cart = null;
 
-    #[ORM\OneToMany(targetEntity: UserAddress::class, mappedBy: 'idUser')]
+    #[ORM\OneToMany(targetEntity: UserAddress::class, mappedBy: 'user')]
+    #[Groups(['user:list', 'user:item'])]
     private Collection $userAddresses;
 
-    #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'userId')]
+    #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'user')]
     private Collection $orders;
 
     #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'user')]
-    private Collection $subscriptions;
+    #[Groups(['subscription:list', 'subscription:item','user:list', 'user:item'])]
+    #[MaxDepth(1)]
+    private Collection $subscriptions; 
 
-    #[ORM\OneToMany(targetEntity: UserPaymentMode::class, mappedBy: 'user')]
-    private Collection $userPaymentModes;
+    #[ORM\OneToMany(targetEntity: UserPaymentMethod::class, mappedBy: 'user')]
+    #[Groups(['user:list', 'user:item'])]
+    private Collection $userPaymentMethods;
 
     public function __construct()
     {
         $this->userAddresses = new ArrayCollection();
         $this->orders = new ArrayCollection();
         $this->subscriptions = new ArrayCollection();
-        $this->userPaymentModes = new ArrayCollection();
+        $this->userPaymentMethods = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -296,29 +329,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, UserPaymentMode>
+     * @return Collection<int, userPaymentMethod>
      */
-    public function getUserPaymentModes(): Collection
+    public function getuserPaymentMethods(): Collection
     {
-        return $this->userPaymentModes;
+        return $this->userPaymentMethods;
     }
 
-    public function addUserPaymentMode(UserPaymentMode $userPaymentMode): static
+    public function adduserPaymentMethod(UserPaymentMethod $userPaymentMethod): static
     {
-        if (!$this->userPaymentModes->contains($userPaymentMode)) {
-            $this->userPaymentModes->add($userPaymentMode);
-            $userPaymentMode->setUser($this);
+        if (!$this->userPaymentMethods->contains($userPaymentMethod)) {
+            $this->userPaymentMethods->add($userPaymentMethod);
+            $userPaymentMethod->setUser($this);
         }
 
         return $this;
     }
 
-    public function removeUserPaymentMode(UserPaymentMode $userPaymentMode): static
+    public function removeuserPaymentMethod(UserPaymentMethod $userPaymentMethod): static
     {
-        if ($this->userPaymentModes->removeElement($userPaymentMode)) {
+        if ($this->userPaymentMethods->removeElement($userPaymentMethod)) {
             // set the owning side to null (unless already changed)
-            if ($userPaymentMode->getUser() === $this) {
-                $userPaymentMode->setUser(null);
+            if ($userPaymentMethod->getUser() === $this) {
+                $userPaymentMethod->setUser(null);
             }
         }
 
