@@ -11,6 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -19,6 +20,7 @@ use Symfony\Component\Serializer\Annotation\MaxDepth;
 #[ApiResource(operations: [
     new GetCollection(normalizationContext: ['groups' => 'order:list']),
     new Get(normalizationContext: ['groups' => 'order:item']),
+    new Post(security: "is_granted('ROLE_ADMIN') or object == user"),
     ],)]
 #[ApiFilter(SearchFilter::class, properties: ['user.id' => 'exact'])]
 

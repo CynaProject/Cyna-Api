@@ -30,7 +30,7 @@ class Package
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['package:list', 'package:item','subscription:list','subscription:item','product:item','product:list','topproduct:item','topproduct:list','user:list', 'user:item',])]
+    #[Groups(['package:list', 'package:item','subscription:list','subscription:item','product:item','product:list','topproduct:item','topproduct:list','user:list', 'user:item'])]
     private ?string $name = null;
 
     #[ORM\OneToMany(targetEntity: CartDetails::class, mappedBy: 'package')]

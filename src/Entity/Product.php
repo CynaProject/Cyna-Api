@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Delete;
 
 use App\Dto\ProductInput;
 use ApiPlatform\Metadata\ApiFilter;
@@ -35,6 +36,7 @@ use App\DataTransformer\ProductDataInputTransformer;
             security: "is_granted('ROLE_ADMIN') or object == user",
             securityMessage: "Seuls les admins ou le propriétaire peuvent créer/modifier."
         ),
+        new Delete(normalizationContext: ['groups' => 'product:item'],security: "is_granted('ROLE_ADMIN') or object == user"),
     ],
 )]
 
@@ -77,10 +79,10 @@ class Product
     #[ORM\OneToMany(targetEntity: CartDetails::class, mappedBy: 'product')]
     private Collection $cartDetails;
 
-#[ApiSubresource()]
-#[ORM\OneToMany(targetEntity: ProductPrice::class, mappedBy: 'product', cascade: ['persist', 'remove'])]
-#[Groups(['product:list', 'product:item', 'productprice:list', 'productprice:item', 'topproduct:list', 'topproduct:item'])]
-private Collection $productPrices;
+    #[ApiSubresource()]
+    #[ORM\OneToMany(targetEntity: ProductPrice::class, mappedBy: 'product', cascade: ['persist', 'remove'])]
+    #[Groups(['product:list', 'product:item', 'productprice:list', 'productprice:item', 'topproduct:list', 'topproduct:item'])]
+    private Collection $productPrices;
 
     #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'product')]
     #[Groups(['productprice:item','topproduct:list'])]

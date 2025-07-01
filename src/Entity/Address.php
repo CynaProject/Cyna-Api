@@ -19,7 +19,7 @@ use Symfony\Component\Serializer\Annotation\MaxDepth;
 #[ApiResource(operations: [
     new GetCollection(normalizationContext: ['groups' => 'address:list']),
     new Get(normalizationContext: ['groups' => 'address:item']),
-    new Post(security: "is_granted('ROLE_ADMIN') or object == user"),
+    new Post(security: "is_granted('IS_AUTHENTICATED_FULLY')"),
     new Delete(security: "is_granted('IS_AUTHENTICATED_FULLY')"),
     new Patch(security: "is_granted('ROLE_ADMIN') or object == user"),
     new Put(security: "is_granted('ROLE_ADMIN') or object == user")
@@ -160,7 +160,7 @@ class Address
     {
         if (!$this->userAddresses->contains($userAddress)) {
             $this->userAddresses->add($userAddress);
-            $userAddress->setAddressId($this);
+            $userAddress->setAddress($this);
         }
 
         return $this;
@@ -170,8 +170,8 @@ class Address
     {
         if ($this->userAddresses->removeElement($userAddress)) {
             // set the owning side to null (unless already changed)
-            if ($userAddress->getAddressId() === $this) {
-                $userAddress->setAddressId(null);
+            if ($userAddress->getAddress() === $this) {
+                $userAddress->setAddress(null);
             }
         }
 

@@ -11,12 +11,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Post;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
 
 #[ApiResource(operations: [
     new GetCollection(normalizationContext: ['groups' => 'orderdetails:list']),
     new Get(normalizationContext: ['groups' => 'orderdetails:item']),
+    new Post(security: "is_granted('ROLE_ADMIN') or object == user"),
     ],)]
 
 #[ORM\Entity(repositoryClass: OrderDetailsRepository::class)]

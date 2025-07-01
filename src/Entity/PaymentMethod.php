@@ -16,16 +16,18 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
 
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use App\State\PaymentMethodStateProcessor;
 
+#[ApiResource(
+    operations: [
+        new GetCollection(normalizationContext: ['groups' => 'paymentmethod:list']),
+        new Get(normalizationContext: ['groups' => 'paymentmethod:item']),
+        new Post(security: "is_granted('IS_AUTHENTICATED_FULLY')", processor: PaymentMethodStateProcessor::class),
+        new Patch(security: "is_granted('ROLE_ADMIN') or object == user"),
+        new Delete(security: "is_granted('PAYMENTMETHOD_DELETE', object)"),
+    ]
+)]
 
-#[ApiResource(operations: [
-    new GetCollection(normalizationContext: ['groups' => 'paymentmethod:list']),
-    new Get(normalizationContext: ['groups' => 'paymentmethod:item']),
-    new Post(security: "is_granted('IS_AUTHENTICATED_FULLY')"),
-    new Patch(security: "is_granted('ROLE_ADMIN') or object == user"),
-    new Delete(security: "is_granted('PAYMENTMETHOD_DELETE', object)"),
-    ],
-    )]
     
 #[ORM\Entity(repositoryClass: PaymentMethodRepository::class)]
 class PaymentMethod
@@ -36,19 +38,19 @@ class PaymentMethod
     #[Groups(['paymentmethod:list', 'paymentmethod:item','user:list', 'user:item','order:list', 'order:item'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(length: 255)]
     #[Groups(['paymentmethod:list', 'paymentmethod:item','user:list', 'user:item','order:list', 'order:item','subscription:list', 'subscription:item'])]
     private ?string $name = null;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(length: 255,type: 'text')]
     #[Groups(['paymentmethod:list', 'paymentmethod:item','user:list', 'user:item','order:list', 'order:item','subscription:list', 'subscription:item',])]
     private ?string $number = null;
 
-    #[ORM\Column(length: 7)]
+    #[ORM\Column(length: 255,type: 'text')]
     #[Groups(['paymentmethod:list', 'paymentmethod:item','user:list', 'user:item','order:list', 'order:item','subscription:list', 'subscription:item',])]
     private ?string $expirationDate = null;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(length: 255,type: 'text')]
     #[Groups(['paymentmethod:list', 'paymentmethod:item','user:list', 'user:item','order:list', 'order:item','subscription:list', 'subscription:item',])]
     private ?string $cvv = null;
 

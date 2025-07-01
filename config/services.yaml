@@ -2,13 +2,9 @@ parameters:
     app_url: 'http://s5-5717.nuage-peda.fr'
 
 services:
-
     _defaults:
-        autowire: true      
+        autowire: true
         autoconfigure: true
-    
-    App\DataPersister\UserDataPersister:
-        tags: [api_platform.data_persister]
 
     App\:
         resource: '../src/'
@@ -17,14 +13,31 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    App\State\UserStateProcessor:  
+    App\DataPersister\UserDataPersister:
+        tags: [api_platform.data_persister]
+
+    App\State\UserStateProcessor:
         bind:
             $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
     
+    App\Service\EncryptionService:
+        arguments:
+            $secretKey: 'y3Gv8nM4sT2qX1kP0a9Zc7WdJr5HbEuL'
+
+    App\Serializer\PaymentMethodNormalizer:
+        arguments:
+            $normalizer: '@api_platform.serializer.normalizer.item'
+        tags:
+            - { name: 'serializer.normalizer', priority: 20 }
+
+    App\State\PaymentMethodStateProcessor:
+        bind:
+            $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
+
     App\EventListener\PaymentMethodListener:
         tags:
             - { name: doctrine.event_listener, event: postPersist }
-    
+
     App\EventListener\AddressListener:
         tags:
             - { name: doctrine.event_listener, event: postPersist }
